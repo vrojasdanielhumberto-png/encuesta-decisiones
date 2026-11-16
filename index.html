@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tomando Buenas Decisiones</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --ink:#1d1d1f; --muted:#5f6368; --line:#dcdad4;
+    --accent:#1f4e79; --accent-ink:#ffffff; --error:#b3261e; --ok:#1e6b3a; --sel:#e8eef5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,"Times New Roman",serif}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 80px}
+  header.top{text-align:center;border-top:6px solid #9a9a9a;border-bottom:2px solid var(--ink);padding:18px 0 14px;margin-bottom:22px}
+  header.top h1{margin:0;font-size:30px}
+  header.top .by{font-style:italic;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 20px;margin:0 0 16px}
+  .q-num{font-weight:bold;color:var(--accent)}
+  h2{font-size:20px;margin:0 0 10px}
+  p{margin:.4em 0 .8em}
+  label.opt{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:8px;margin:6px 0;cursor:pointer;background:#fff}
+  label.opt:hover{background:#fafafa}
+  label.opt input{margin-top:5px;flex:none;width:18px;height:18px;accent-color:var(--accent)}
+  label.opt:has(input:checked){background:var(--sel);border-color:var(--accent)}
+  .field{margin:10px 0}
+  .field > span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px;font-family:system-ui,sans-serif}
+  input[type=text],input[type=tel],input[type=email],textarea{width:100%;padding:10px 12px;font:16px system-ui,sans-serif;border:1px solid #bdbab3;border-radius:8px;background:#fff;color:var(--ink)}
+  textarea{min-height:70px}
+  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .unit{display:flex;align-items:center;gap:8px}
+  .unit input{max-width:260px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .est{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px}
+  .est:first-of-type{border-top:0}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+  .tcard{border:2px solid #7fb069;border-radius:14px;text-align:center;padding:12px 6px;cursor:pointer;font-family:system-ui,sans-serif;font-size:14px;background:#fff;user-select:none}
+  .tcard i{display:block;margin-top:6px}
+  .tcard input{display:none}
+  .tcard:has(input:checked){background:var(--sel);border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+  .bag{border:1px solid var(--ink);display:inline-block;padding:6px 18px;margin:6px 0;font-family:system-ui,sans-serif;font-size:14px}
+  .btn{display:inline-block;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:13px 22px;font:600 16px system-ui,sans-serif;cursor:pointer}
+  .btn[disabled]{opacity:.6;cursor:wait}
+  .err{color:var(--error);font:14px system-ui,sans-serif;margin-top:6px;display:none}
+  .card.invalid{border-color:var(--error)}
+  .card.invalid .err{display:block}
+  .note{font:14px system-ui,sans-serif;color:var(--muted)}
+  .badge{display:inline-block;font:600 13px system-ui,sans-serif;background:var(--sel);color:var(--accent);padding:3px 10px;border-radius:99px}
+  .hidden{display:none}
+  .seq{font-family:ui-monospace,Consolas,monospace;font-weight:bold;letter-spacing:2px}
+  .done{text-align:center;padding:40px 20px}
+  .done h2{color:var(--ok);font-size:24px}
+  fieldset{border:0;padding:0;margin:0}
+  legend{font-weight:bold;margin:8px 0 2px}
+  @media (max-width:560px){
+    .grid3{grid-template-columns:1fr}
+    .cards{grid-template-columns:repeat(2,1fr)}
+    header.top h1{font-size:25px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Tomando Buenas Decisiones</h1>
+    <div class="by">por Luis Pinzón</div>
+  </header>
+
+  <!-- PASO 1: datos de la persona -->
+  <section id="paso1">
+    <div class="card">
+      <p>La encuesta que se presenta a continuación tiene propósitos <b>exclusivamente académicos</b>.</p>
+      <p>Antes de empezar, por favor deje sus datos. Solo se usarán para verificar que la encuesta fue realizada.</p>
+    </div>
+    <div class="card" data-req="nombre">
+      <div class="field"><span>Nombre completo *</span><input type="text" id="nombre" autocomplete="name"></div>
+      <div class="err">Escriba su nombre completo (nombre y apellido).</div>
+    </div>
+    <div class="card" data-req="telefono">
+      <div class="field"><span>Teléfono de contacto *</span><input type="tel" id="telefono" autocomplete="tel" inputmode="tel"></div>
+      <div class="field"><span>Correo electrónico (opcional)</span><input type="email" id="correo" autocomplete="email"></div>
+      <div class="err">Escriba un teléfono válido (mínimo 7 dígitos).</div>
+    </div>
+    <div class="card" data-req="genero">
+      <h2>Género *</h2>
+      <label class="opt"><input type="radio" name="genero" value="Masculino"> Masculino</label>
+      <label class="opt"><input type="radio" name="genero" value="Femenino"> Femenino</label>
+      <div class="err">Seleccione una opción.</div>
+    </div>
+    <button class="btn" id="btnEmpezar">Empezar encuesta</button>
+    <div class="err" id="errEmpezar" style="display:none"></div>
+  </section>
+
+  <!-- PASO 2: encuesta -->
+  <section id="paso2" class="hidden">
+    <div class="card">
+      <p><span class="badge" id="badgeTipo"></span></p>
+      <p>Para cada punto seleccione la respuesta que a su juicio sea <b><u>la más acertada</u></b>. Es posible que usted considere que ninguna de las alternativas es totalmente acertada, pero en cada caso debe ofrecer la respuesta que le parezca preferible.</p>
+      <p class="note">Todas las preguntas son obligatorias. Escriba las cifras completas solo con números (ej. 5000000 o 5'000.000), sin palabras como "millones".</p>
+    </div>
+    <form id="form" novalidate></form>
+    <button class="btn" id="btnEnviar">Enviar encuesta</button>
+    <div class="err" id="errEnviar" style="display:none"></div>
+  </section>
+
+  <section id="paso3" class="hidden">
+    <div class="card done">
+      <h2>¡Gracias!</h2>
+      <p>Su encuesta quedó registrada correctamente.</p>
+      <p class="note">Ya puede cerrar esta página.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+// ===== Configuración del backend (Supabase) =====
+const SUPABASE_URL = "https://uvodcmmehtghkbwadzlq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CLYuajCg_s7EcEQDBkKyNQ__j2Wg_t3";
+// Encuestador: se toma de ?enc=Nombre en el link (para saber de quién es cada encuesta)
+const ENCUESTADOR = new URLSearchParams(location.search).get("enc") || "";
+
+// ===== Preguntas =====
+// t: radio | radio2 (dos decisiones) | cards | num | text | est (estimativos) | demo
+const ESTIMATIVOS = [
+  ["a","La población de Nigeria en 2025."],
+  ["b","El consumo mundial de petróleo en el mundo en el año 2025 (expresado en barriles de petróleo)."],
+  ["c","El número de pasajeros que se movilizaron en avión durante el año 2025 en Europa."],
+  ["d","La deuda externa del sector público de Colombia (en dólares) al finalizar el año 2025."],
+  ["e","La distancia entre Roma y Amsterdam por carretera."],
+  ["f","El valor de las exportaciones colombianas en 2025 (expresadas en dólares)."],
+  ["g","El diámetro del planeta Tierra."],
+  ["h","La distancia del sol a la estrella más próxima."],
+  ["i","La densidad poblacional de la isla Santa Cruz del Islote (archipiélago de San Bernardo, Colombia) (en personas por kilómetro cuadrado)."],
+  ["j","El producto interno bruto de China en el año 2025 (en dólares)."]
+];
+
+function preguntas(tipo){
+  const v1 = tipo === 1;
+  return [
+  {n:1,t:"radio",html:`<p>En el año 2026 la revista Forbes clasificó a las más grandes compañías del mundo teniendo en cuenta datos como sus ventas, activos, utilidades y precio de mercado.</p>
+    <p>A. Johnson &amp; Johnson, BMW Group, Shell, Nvidia, General Motors, Nestlé.<br>B. ICBC, Alphabet, Ping, Wells Fargo, AgBank, HSBC, Berkshire Hathaway.</p>
+    <p>¿En conjunto, cuál de los grupos (A ó B) está conformado por compañías más grandes en el periodo señalado?</p>`,
+    opts:[["A","Grupo A"],["B","Grupo B"]]},
+  {n:2,t:"cards",html:`<p><i>(Adaptado de Einhorn y Hogarth)</i></p>
+    <p>Juan, funcionario de Ecopetrol, ha afirmado que cuando un conocido experto en el mercado mundial del petróleo predice un alza del precio del crudo, siempre se presenta un alza de este precio. Suponga que usted debe verificar esta afirmación basado en información que se tomó en el pasado después de que el experto efectuó predicciones sobre el precio del petróleo. Usted tendrá la oportunidad de examinar la información disponible sobre los siguientes cuatro eventos, información que aparece en cuatro tarjetas.</p>
+    <p>Usted actualmente ve las predicciones (tarjetas A y B) o los resultados (tarjetas C y D) asociadas con los cuatro eventos. Por ahora usted sólo puede ver una sola cara de las tarjetas. Del otro lado de las tarjetas A y B aparece el resultado que realmente ocurrió, mientras que del otro lado de las tarjetas C y D se encuentra la predicción hecha por el experto.</p>
+    <p>Suponga que usted sólo puede dar vuelta a dos de estas tarjetas y que desea verificar lo mejor posible la afirmación de Juan sobre el experto. <b>¿A cuáles dos tarjetas observaría usted el reverso?</b> (seleccione exactamente dos)</p>`,
+    opts:[["A","“Habrá un alza”"],["B","“No habrá un alza”"],["C","“Alza en el precio”"],["D","“Baja en el precio”"]]},
+  {n:3,t:"radio",html:`<p>Suponga que en un experimento primero se nos da un premio de $600,000. Luego se nos pide escoger entre las dos siguientes posibilidades. Por favor, marque la opción que usted prefiere.</p>`,
+    opts:[["A","Recibir $200,000 adicionales con seguridad."],["B","Lanzar una moneda. Si sale cara recibiremos otros $400,000; si sale sello no se nos dará nada adicional."]]},
+  {n:4,t:"radio",html:`<p>En una localidad hay dos hospitales. En el más grande de los dos, nacen unos 45 bebés cada día y en el más pequeño nacen unos 15 bebés cada día. Como es bien sabido cerca de la mitad (50%) de los bebés que nacen son niñas, no obstante, el porcentaje exacto de niñas varía día a día. Algunos días es posible que nazcan más niños que niñas, mientras que otros días pueden nacer más niñas que niños.</p>
+    <p>Durante un año entero se ha llevado un control en ambos hospitales. Se ha registrado en cada uno el número de días en los que más del 60% de los nacimientos son de niñas. ¿En cuál de los dos hospitales considera Ud. que es más probable que haya más días en los que nació más del 60% de niñas?</p>`,
+    opts:[["A","En el hospital más grande"],["B","En el hospital más pequeño"],["C","Es igual en ambos hospitales"]]},
+  {n:5,t:"radio",html:`<p>Se ha lanzado una moneda al azar 800 veces. Se conoce que esta moneda tiene la misma probabilidad de caer cara (<b>C</b>) o caer sello (<b>S</b>). Se registraron las observaciones una por una como C ó S y se escribieron consecutivamente en una hoja usando estos símbolos.</p>
+    <p>¿Cuál de las siguientes secuencias de observaciones cree usted que debió presentarse con mayor frecuencia en el conjunto total de 800 lanzamientos?</p>
+    <p>Secuencia 1: <span class="seq">C S S C S C C S C</span><br>Secuencia 2: <span class="seq">C C C C S S S S S</span></p>`,
+    opts:[["A","La Secuencia 1 debió presentarse con mayor frecuencia."],["B","La Secuencia 2 debió presentarse con mayor frecuencia."],["C","Las dos secuencias pudieron presentarse con igual frecuencia."]]},
+  {n:6,t:"est",html:`<p>Para cada uno de los casos que se presentan a continuación escriba la cifra más exacta que usted pueda ofrecer para estimar la magnitud señalada. La mayor parte de las personas tiene incertidumbre acerca de cuál es la respuesta correcta en cada caso, solamente se espera que ofrezca su mejor estimativo. En vista de la incertidumbre, después de dar su estimativo establezca usted un rango para cada cifra (un número inferior y uno superior a su estimativo) en tal forma que Ud. considere que la respuesta correcta se encuentra dentro de ese rango con un <b>95% de certeza</b>.</p>`},
+  {n:7,t:"num",suf:"%",html:`<p>Un porcentaje del total de los accidentes de tránsito que involucran a las motocicletas y que implican la muerte de una persona se deben a la embriaguez del conductor. ¿Cuál es su mejor estimativo de este porcentaje en las carreteras nacionales para el año 2024? Mi primo José, a quien le gusta conducir, al escuchar esta pregunta opinó que este porcentaje es del <b>${v1?"70%":"8%"}</b>. A continuación, anote por favor su mejor estimativo.</p>`},
+  {n:8,t:"num",suf:"collares",html:`<p>Un fabricante elabora collares usando mil piezas en cada uno de ellos. El fabricante tiene un millón de piezas en total. Para elaborar un collar hay que unir una a una las piezas, y para hacer esto se dispone de una máquina que con una probabilidad del 99% efectúa bien las uniones y con una probabilidad del 1% hace mal las uniones. Si en una de las uniones que se efectúan para fabricar un collar se comete un error, el collar queda mal fabricado.</p>
+    <p>Si con la máquina se tratan de fabricar 1000 collares de 1000 piezas cada uno, ¿cuál es su mejor estimativo del número de collares que quedarán bien fabricados?</p>`},
+  {n:9,t:"radio",html:`<p>¿En cuál de los dos siguientes proyectos invertiría usted el dinero de la institución en la que usted trabaja?</p>`,
+    opts:[["A","Un proyecto que con absoluta seguridad produce una utilidad de 400 millones de pesos."],["B","Un proyecto que con una probabilidad del 67% produce una utilidad de 660 millones de pesos, y que tiene una probabilidad del 33% de no producir ninguna utilidad (utilidad = 0)."]]},
+  {n:10,t:"radio",por:true,html:`<p>Suponga que a usted le ofrecen gratuitamente un boleto de una lotería que tiene un premio mayor de 20 millones de pesos. A usted le dan a escoger entre los tres números que a continuación aparecen (solo están disponibles estos tres números). ¿Cuál de ellos escogería usted?</p>`,
+    opts:[["A","76926"],["B","11111"],["C","64646"],["D","Cualquiera de los anteriores."]]},
+  {n:11,t:"num",suf:"minutos",html:`<p>Si a 5 máquinas le toma 5 minutos fabricar 5 tornillos, ¿cuánto tiempo le tomará a 100 máquinas fabricar 100 tornillos?</p>`},
+  {n:12,t:"num",pre:"$",html:`<p>Durante un viaje turístico al Amazonas estuvimos expuestos a un virus raro y fatal que se propagó por la región mientras la visitábamos. Un médico ha informado que la probabilidad que tiene cualquier turista haya contraído la enfermedad es de 1 en 1000 durante el período de nuestra visita al Amazonas (es decir, en promedio una de cada mil personas contrae la enfermedad). La mencionada enfermedad no tiene cura y resulta fatal, a menos que se reciba una dosis de un antídoto que detiene completamente y de manera permanente el desarrollo de la enfermedad. Desafortunadamente estos antídotos sólo se venden en pequeñas cantidades y al mayor postor. Si usted fuera a participar en una subasta en la cual sólo el mayor postor se queda con el antídoto, ¿cuál sería la máxima cantidad de dinero que usted estaría dispuesto a ofrecer por el antídoto?</p>`},
+  {n:13,t:"num",pre:"$",html:`<p>Esta situación es idéntica a la anterior, pero con algunos cambios. Ahora suponga que la probabilidad de contraer la enfermedad es de 4 en 1000. El antídoto sólo funciona en un 25% de los casos, es decir, sólo detiene completamente la enfermedad en una de cada cuatro personas que se la aplica (las otras tres personas mueren). En este caso, ¿cuál sería la máxima cantidad de dinero que usted estaría dispuesto a ofrecer por el antídoto?</p>`},
+  {n:14,t:"num",pre:"$",suf:"pesos",max:100000,html: v1 ?
+    `<p><i>(Basado en Fox &amp; Tversky.)</i> Imagine que hay una bolsa sobre la mesa (Bolsa A) que contiene exactamente 50 fichas rojas y 50 fichas negras. Suponga que se le ofrece un tiquete con la oportunidad de jugar el siguiente juego:</p>
+    <p>1. Primero usted selecciona un color (rojo o negro).<br>2. Seguidamente, sin mirar usted toma una ficha de la Bolsa A.<br>3. Si el color de la ficha coincide con el color que usted seleccionó, usted ganaría $100.000. De lo contrario no gana nada.</p>
+    <div class="bag">BOLSA A<br>50 fichas rojas<br>50 fichas negras<br>100 fichas en total</div>
+    <p>¿Cuánto sería el valor máximo que usted estaría dispuesto a pagar por el tiquete para jugar este juego para la Bolsa A (obviamente este valor debe estar entre 0 y $100.000)?</p>
+    <p>Lo máximo que pagaría por el tiquete para jugar en la Bolsa A (50 rojas/50 negras) es:</p>`
+    :
+    `<p><i>(Basado en Fox &amp; Tversky.)</i> Imagine que hay una bolsa sobre la mesa (Bolsa B) que contiene 100 fichas rojas o negras, en proporción desconocida. Suponga que se le ofrece un tiquete con la oportunidad de jugar el siguiente juego:</p>
+    <p>1. Primero usted selecciona un color (rojo o negro).<br>2. Seguidamente, sin mirar usted toma una ficha de la Bolsa B.<br>3. Si el color de la ficha coincide con el color que usted seleccionó, usted ganaría $100.000. De lo contrario no gana nada.</p>
+    <div class="bag">BOLSA B<br>? fichas rojas<br>? fichas negras<br>100 fichas en total</div>
+    <p>¿Cuánto sería el valor máximo que usted estaría dispuesto a pagar por el tiquete para jugar este juego para la Bolsa B (obviamente este valor debe estar entre 0 y $100.000)?</p>
+    <p class="note">Nota: en la Bolsa B no se sabe cuántas fichas rojas o negras hay, aunque se conoce que todas las 100 fichas en esta bolsa son rojas o negras.</p>
+    <p>Lo máximo que pagaría por el tiquete para jugar en la Bolsa B (? rojas/? negras) es:</p>`},
+  {n:15,t:"num",suf:"días",html:`<p>En un lago hay un parche de algas (o nenúfares). Cada día el parche se dobla en tamaño. ¿Si toma 48 días cubrir completamente el lago de algas (o nenúfares), cuánto tiempo tomará cubrir la mitad del lago?</p>`},
+  {n:16,t:"radio",html:`<p>Suponga que usted va a un spa o a un centro de relajación. ¿Cuál de los siguientes paquetes escogería?</p>`,
+    opts: v1 ? [["A","Chocolaterapia por $200.000."],["B","Masaje relajante por $120.000."],["C","Masaje relajante + Chocolaterapia por $250.000."]]
+             : [["A","Masaje relajante por $120.000."],["B","Masaje relajante + Chocolaterapia por $250.000."]]},
+  {n:17,t:"radio2",html:`<p>Imagine que en una mesa hay una bolsa que contiene 10 fichas blancas y 20 fichas rojas o azules en una proporción desconocida.</p>
+    <p>En la Decisión 1 escoja entre 1 y 2. Luego efectúe su decisión entre las opciones 3 y 4.</p>`,
+    d1:[["1","Apostar $50.000 a que la ficha será blanca."],["2","Apostar $50.000 a que la ficha será roja."]],
+    d2:[["3","Apostar $50.000 a que la ficha será blanca o azul."],["4","Apostar $50.000 a que la ficha será roja o azul."]]},
+  {n:18,t:"num",pre:"$",html:`<p>Imagine que usted se encuentra en la playa con sus amigos en un día de mucho calor y lo único que tiene para beber es agua. Durante la última hora ha estado pensando en cuánto le encantaría poder disfrutar de una buena botella bien fría de su marca favorita de cerveza. En un momento dado, uno de sus amigos se levanta para hablar por teléfono y ofrece traer cervezas del único punto de venta cercano, <b>${v1?"un hotel cinco estrellas":"una pequeña y desbaratada tienda de comestibles"}</b>. Antes de irse, su amigo comenta que puede que la cerveza sea cara y le pregunta cuánto sería lo máximo que estaría dispuesto a pagar, dado que él solo compraría la bebida si está dentro de su presupuesto. ¿Cuánto estaría dispuesto a pagar?</p>`},
+  {n:19,t:"radio",html:`<p>Un dado normal de seis caras ha sido pintado de manera que ahora cuatro de sus caras son verdes y dos son rojas. Después de hacerlo mover dentro de una cajita cuadrada, el dado es arrojado repetidamente sobre una mesa de superficie plana. Una de las secuencias que aparecen más adelante salió al arrojar el dado repetidas veces. Suponga que usted debe apostar $50,000 a una de las siguientes secuencias. Si apuesta su dinero a la secuencia que salió, se gana $150,000; pero si no acierta, pierde los $50,000 apostados. ¿A cuál de las siguientes secuencias apostaría usted su dinero? (por supuesto, usted debería apostar a la secuencia que tiene una mayor probabilidad de ocurrir)</p>`,
+    opts:[["A",`Secuencia 1: <span class="seq">RVRRR</span>`],["B",`Secuencia 2: <span class="seq">VRVRRR</span>`],["C",`Secuencia 3: <span class="seq">VRRRRR</span>`]]},
+  {n:20,t:"num",suf:"%",html:`<p>Una prueba médica es diseñada con toda la precisión científica posible para dar un resultado “positivo” cuando un paciente determinado tiene una enfermedad específica.${v1?"":" Adicionalmente,"} Sabemos que:</p>
+    <ul><li>La prueba tiene una confiabilidad del 80%, es decir, la probabilidad de que la prueba indique que el paciente tiene la enfermedad cuando realmente la tiene es del 80%.</li>
+    <li>La probabilidad de que el paciente no tenga la enfermedad cuando la prueba indica que no la tiene es del 90%.</li>
+    <li>En promedio, la enfermedad que detecta la prueba empleada afecta a un 1% de la población que tiene la misma edad del paciente examinado.</li></ul>
+    <p>Se aplica la prueba médica a un paciente y efectivamente la prueba indica que el paciente tiene la enfermedad. Teniendo en cuenta lo anterior, y sin conocer nada más sobre el paciente, ¿cuál es la probabilidad de que este paciente tenga la enfermedad?</p>`},
+  {n:21,t:"radio",html:`<p>Suponga que usted está jugando en una ruleta perfectamente balanceada que consta de 38 ranuras idénticas. En cada juego, se da vuelta a la ruleta en una dirección determinada y luego se lanza una pequeña pelota de marfil por un borde interior de la rueda. La pelota termina por rebotar entre las ranuras y caer en alguna de ellas. Las ranuras están pintadas de los colores rojo y negro de manera alternada, de manera que hay igual cantidad de ranuras negras que de ranuras rojas. La pelota de marfil tiene la misma probabilidad de caer en cualquier ranura. Suponga que durante los últimos 20 juegos en que se ha lanzado la pelota de marfil, ésta ha caído en una ranura roja. Ahora, ¿a cuál color usted apostaría que caerá la pelota de marfil en el próximo juego?</p>`,
+    opts:[["A","Al color rojo"],["B","Al color negro"],["C","Cualquier color es igual"]]},
+  {n:22,t:"radio",html:`<p>Usted acaba de entregar un informe importante que le solicitaron en ${v1?"su empresa":"la empresa donde usted trabaja"}. Este informe${v1?"":", que será leído por su jefe,"} es importante para su evaluación anual, y usted invirtió mucho tiempo y esfuerzo en elaborarlo bien. A usted le dirán pasado mañana si el informe fue bueno o malo. Sus vacaciones se inician en tres semanas. A usted le han ofrecido una promoción especial para sus vacaciones en Cartagena. ${v1?"Esta":"La promoción"} implica un pago de $500,000, que a usted le parece un excelente descuento (después el precio del viaje a Cartagena será mucho más alto). Actualmente dispone de los $500,000. ${v1?"Pero":"Sin embargo,"} la promoción sólo es válida si antes de las 5 p.m. de mañana usted paga $125,000 en una agencia de viajes. Estos $125,000 son parte del pago de $500,000 y no son retornables bajo ninguna circunstancia. Usted puede posponer su decisión por un día (y para entonces ya sabrá si su importante informe fue bien o mal evaluado) sin perder la promoción sólo si usted paga $35,000, cantidad que no es retornable y que no forma parte de los $500,000 que hay que pagar para tener la promoción.</p>
+    <p>Suponga que su jefe le informa esta misma noche que su informe fue bueno. Entre las siguientes decisiones, marque por favor aquella que usted considera preferible:</p>`,
+    opts:[["A","Usted pospone su decisión hasta pasado mañana pagando $35,000."],["B","Usted decide no ir al paseo a Cartagena y por consiguiente no paga nada."],["C","Usted decide ir al paseo a Cartagena y paga mañana $125,000 aprovechando la promoción."]]},
+  {n:23,t:"radio",html: v1 ?
+    `<p>Por favor, indique si a usted le ha ocurrido lo siguiente: Se despierta usted en la noche paralizado con la sensación de que una persona o presencia extraña o algo diferente se encuentra en su habitación.</p><p>Por favor, marque la frecuencia con que esto le ha ocurrido en su vida:</p>`
+    : `<p>Por favor, indique si a usted le ha ocurrido lo siguiente: Se despierta usted en la noche paralizado.</p><p>Por favor, marque la frecuencia con que esto le ha ocurrido en su vida:</p>`,
+    opts:[["A","Nunca."],["B","Menos de 5 veces."],["C","Entre 5 y 10 veces."],["D","Más de 10 veces."]]},
+  {n:24,t:"num",pre:"Probabilidad =",suf:"%",html:`<p>Se tienen tres tarjetas ocultas dentro de un sombrero. Una de ellas es roja por las dos caras (roja-roja). Otra es blanca en las dos caras (blanca-blanca). Y la tercera tarjeta es roja por una cara y blanca por la otra. Suponga que un amigo suyo toma una tarjeta al azar entre aquellas que se encuentran dentro del sombrero, la arroja al aire y al caer la tarjeta muestra una cara roja. ¿Cuál es la probabilidad de que esta tarjeta arrojada por su amigo sea la tarjeta con dos caras rojas?</p>`},
+  {n:25,t:"num",pre:"$",html:`<p>Suponga que usted quiere realizar un viaje en diciembre. Después de todo el esfuerzo que ha hecho durante el año siente que se merece un buen descanso de tres semanas y piensa que es la oportunidad perfecta para ir a Europa, pues siempre había querido ir pero no había tenido el tiempo, ni el dinero suficiente. ¿Cuánto dinero estaría dispuesto a pagar por éste?</p>
+    <p>Por favor escriba la cifra en números que representen pesos colombianos (por ej., $5'000.000).</p>`},
+  {n:26,t:"radio",html:`<p>Mientras usted termina de finiquitar los últimos detalles de un viaje de turismo a Europa, se da cuenta que por cuestiones de tiempo, solo va a poder visitar una ciudad en Italia. Entre sus planes estaba visitar Roma pues siempre había soñado conocer la Fontana di Trevi, y pensaba también visitar Venecia. Sin embargo, tiene que escoger una entre las dos. Su agencia de viajes le propone estas opciones. Por favor, marque la opción que usted prefiere.</p>`,
+    opts: v1 ? [["A","Un hotel en Venecia que ofrece alojamiento en una habitación sencilla y que está ubicado estratégicamente cerca de las principales atracciones de la ciudad."],
+                ["B","Un hotel en Venecia que ofrece alojamiento en una habitación sencilla y desayuno gratis por todos los días de estadía, además la ubicación del hotel es relativamente cercana a las principales atracciones de la ciudad."],
+                ["C","Un hotel en Roma que ofrece alojamiento en una habitación sencilla y que está ubicado cerca de las principales atracciones de la ciudad."]]
+             : [["A","Un hotel en Venecia que ofrece alojamiento en una habitación sencilla y que está ubicado estratégicamente cerca de las principales atracciones de la ciudad."],
+                ["B","Un hotel en Roma que ofrece alojamiento en una habitación sencilla y que está ubicado cerca de las principales atracciones de la ciudad."]]},
+  {n:27,t:"radio",html:`<p>Suponga que en un experimento primero se nos da un premio de $1’000,000. Luego se nos pide escoger entre las dos siguientes posibilidades:</p>`,
+    opts:[["A","Perder $200,000 con seguridad."],["B","Lanzar una moneda. Si sale cara perderemos $400,000; si sale sello no perderemos nada."]]},
+  {n:28,t:"radio",html:`<p>Si el destino le deparará alguno de los siguientes acontecimientos, ¿qué preferiría que le sucediera?</p>`,
+    opts:[["A","Recibir un foto-comparendo por concepto de invasión del carril preferencial de buses por un valor de $730.000."],["B","Recibir dos notificaciones de cobro: un foto-comparendo por concepto de mal parqueo por un valor $330.000 y, segundo, un aviso de Banco Davivienda cobrando intereses moratorios sobre un préstamo por valor de $400.000."]]},
+  {n:"edad",t:"radio",titulo:"Por último: rango de edad",opts:[["<20","Menos de 20"],["21-30","21-30"],["31-40","31-40"],["41-50","41-50"],["51-60","51-60"],["61-70","61-70"],[">70","Más de 70"]]},
+  {n:"educacion",t:"radio",titulo:"Nivel educativo (indique el más aproximado)",opts:[["Ninguno","Ninguno"],["Primaria","Primaria"],["Bachillerato","Bachillerato"],["Pregrado Universitario","Pregrado Universitario"],["Postgrado Universitario","Postgrado Universitario"]]},
+  {n:"ocupacion",t:"radio",titulo:"Ocupación",opts:[["Estudiante","Estudiante"],["No estudiante","No estudiante"]]}
+  ];
+}
+
+// ===== Render =====
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let TIPO = null, PREGS = [], SESION = null;
+
+function numInput(name, q){
+  return `<div class="unit">${q.pre?`<span>${q.pre}</span>`:""}<input type="text" inputmode="decimal" name="${name}" autocomplete="off">${q.suf?`<span>${q.suf}</span>`:""}</div>`;
+}
+function render(){
+  const f = $("#form"); f.innerHTML = "";
+  for (const q of PREGS){
+    const id = "q"+q.n;
+    let h = `<div class="card" data-q="${q.n}">`;
+    h += q.titulo ? `<h2>${q.titulo}</h2>` : `<p class="q-num">Pregunta ${q.n}</p>${q.html}`;
+    if (q.t==="radio"){
+      h += q.opts.map(([v,l]) => `<label class="opt"><input type="radio" name="${id}" value="${esc(v)}"><span>${typeof q.n==="number"?`<b>${v}.</b> `:""}${l}</span></label>`).join("");
+      if (q.por) h += `<div class="field"><span>¿Por qué escogió usted este número?</span><textarea name="${id}_porque"></textarea></div>`;
+    } else if (q.t==="radio2"){
+      h += `<fieldset><legend>Decisión 1</legend>` + q.d1.map(([v,l])=>`<label class="opt"><input type="radio" name="${id}_d1" value="${v}"><span><b>${v}.</b> ${l}</span></label>`).join("") + `</fieldset>`;
+      h += `<fieldset><legend>Decisión 2</legend>` + q.d2.map(([v,l])=>`<label class="opt"><input type="radio" name="${id}_d2" value="${v}"><span><b>${v}.</b> ${l}</span></label>`).join("") + `</fieldset>`;
+    } else if (q.t==="cards"){
+      h += `<div class="cards">` + q.opts.map(([v,l])=>`<label class="tcard"><input type="checkbox" name="${id}" value="${v}">Tarjeta ${v}<i>${l}</i></label>`).join("") + `</div>`;
+    } else if (q.t==="num"){
+      h += numInput(id, q);
+    } else if (q.t==="est"){
+      h += ESTIMATIVOS.map(([k,l]) => `<div class="est"><p><b>${k}.</b> ${l}</p><div class="grid3">
+        <div class="field"><span>Estimativo</span><input type="text" inputmode="decimal" name="${id}${k}_est" autocomplete="off"></div>
+        <div class="field"><span>Rango: entre (inferior)</span><input type="text" inputmode="decimal" name="${id}${k}_inf" autocomplete="off"></div>
+        <div class="field"><span>y (superior)</span><input type="text" inputmode="decimal" name="${id}${k}_sup" autocomplete="off"></div></div></div>`).join("");
+    }
+    h += `<div class="err">Esta pregunta es obligatoria.</div></div>`;
+    f.insertAdjacentHTML("beforeend", h);
+  }
+}
+
+// Convierte "5'000.000", "$ 1.200.000", "12,5" -> número
+function parseNum(s){
+  if (s==null) return NaN;
+  s = String(s).trim().replace(/[$%\s]/g,"").replace(/[’']/g,".");
+  if (!s) return NaN;
+  const dots = (s.match(/\./g)||[]).length, commas = (s.match(/,/g)||[]).length;
+  if (dots>1 && commas===0) s = s.replace(/\./g,"");
+  else if (commas>1 && dots===0) s = s.replace(/,/g,"");
+  else if (dots && commas){ // el último separador es decimal
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g,"").replace(",",".");
+    else s = s.replace(/,/g,"");
+  } else if (commas===1){
+    const [a,b] = s.split(","); s = (b.length===3 && a.length<=3 && a!=="0") ? a+b : a+"."+b;
+  } else if (dots===1){
+    const [a,b] = s.split("."); if (b.length===3 && a.length<=3 && a!=="0") s = a+b;
+  }
+  const n = Number(s);
+  return isFinite(n) ? n : NaN;
+}
+
+function val(name){ const el = document.querySelector(`[name="${name}"]:checked`); return el ? el.value : null; }
+function txt(name){ const el = document.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ""; }
+
+function recoger(){
+  const r = {}; let firstBad = null; const marcar = (card, ok, msg) => {
+    card.classList.toggle("invalid", !ok);
+    if (msg) card.querySelector(".err").textContent = msg;
+    if (!ok && !firstBad) firstBad = card;
+  };
+  for (const q of PREGS){
+    const id = "q"+q.n, card = document.querySelector(`[data-q="${q.n}"]`);
+    let ok = true, msg = "Esta pregunta es obligatoria.";
+    if (q.t==="radio"){
+      const v = val(id); ok = !!v; r[id] = v;
+      if (q.por){ r[id+"_porque"] = txt(id+"_porque"); if (ok && !r[id+"_porque"]){ ok=false; msg="Cuéntenos por qué escogió este número."; } }
+    } else if (q.t==="radio2"){
+      r[id+"_d1"] = val(id+"_d1"); r[id+"_d2"] = val(id+"_d2"); ok = !!(r[id+"_d1"] && r[id+"_d2"]);
+      if (!ok) msg = "Responda la Decisión 1 y la Decisión 2.";
+    } else if (q.t==="cards"){
+      const v = [...document.querySelectorAll(`[name="${id}"]:checked`)].map(e=>e.value);
+      ok = v.length===2; r[id] = v.join(","); if (!ok) msg = "Seleccione exactamente dos tarjetas.";
+    } else if (q.t==="num"){
+      const raw = txt(id), n = parseNum(raw); r[id] = n; r[id+"_texto"] = raw;
+      ok = !isNaN(n) && n>=0; if (!ok) msg = "Escriba un número válido.";
+      if (ok && q.max!=null && n>q.max){ ok=false; msg="El valor debe estar entre 0 y $100.000."; }
+      if (ok && q.suf==="%" && n>100){ ok=false; msg="El porcentaje debe estar entre 0 y 100."; }
+    } else if (q.t==="est"){
+      for (const [k] of ESTIMATIVOS){
+        const e = parseNum(txt(`${id}${k}_est`)), lo = parseNum(txt(`${id}${k}_inf`)), hi = parseNum(txt(`${id}${k}_sup`));
+        r[`${id}${k}_est`]=e; r[`${id}${k}_inf`]=lo; r[`${id}${k}_sup`]=hi;
+        if ([e,lo,hi].some(isNaN)){ ok=false; msg=`Complete los tres números del literal ${k}.`; break; }
+        if (!(lo<=e && e<=hi)){ ok=false; msg=`En el literal ${k} el rango debe contener su estimativo (inferior ≤ estimativo ≤ superior).`; break; }
+      }
+    }
+    marcar(card, ok, msg);
+  }
+  return {r, firstBad};
+}
+
+// ===== Backend =====
+async function rpc(fn, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY},
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ===== Paso 1 =====
+$("#btnEmpezar").addEventListener("click", async () => {
+  const nombre = $("#nombre").value.trim(), tel = $("#telefono").value.trim(), gen = val("genero");
+  const cN = document.querySelector('[data-req="nombre"]'), cT = document.querySelector('[data-req="telefono"]'), cG = document.querySelector('[data-req="genero"]');
+  cN.classList.toggle("invalid", nombre.split(/\s+/).length < 2);
+  cT.classList.toggle("invalid", tel.replace(/\D/g,"").length < 7);
+  cG.classList.toggle("invalid", !gen);
+  if (document.querySelector("#paso1 .invalid")) return;
+  const b = $("#btnEmpezar"), e = $("#errEmpezar"); b.disabled = true; b.textContent = "Cargando…"; e.style.display="none";
+  try{
+    const a = await rpc("liderazgo_iniciar_encuesta", {p_nombre:nombre, p_telefono:tel, p_correo:$("#correo").value.trim(), p_genero:gen, p_encuestador:ENCUESTADOR});
+    TIPO = a.tipo; SESION = a.id;
+  }catch(err){
+    e.textContent = "No se pudo conectar. Revise su internet e intente de nuevo."; e.style.display="block";
+    b.disabled=false; b.textContent="Empezar encuesta"; return;
+  }
+  PREGS = preguntas(TIPO); render();
+  $("#badgeTipo").textContent = `Encuesta Tipo ${TIPO} (Versión ${TIPO})`;
+  $("#paso1").classList.add("hidden"); $("#paso2").classList.remove("hidden"); scrollTo(0,0);
+});
+
+// ===== Paso 2 =====
+$("#btnEnviar").addEventListener("click", async () => {
+  const {r, firstBad} = recoger(), e = $("#errEnviar");
+  if (firstBad){ firstBad.scrollIntoView({behavior:"smooth",block:"center"}); e.textContent="Faltan respuestas o hay datos por corregir (marcados en rojo)."; e.style.display="block"; return; }
+  const b = $("#btnEnviar"); b.disabled = true; b.textContent = "Enviando…"; e.style.display="none";
+  try{
+    await rpc("liderazgo_enviar_encuesta", {p_id:SESION, p_respuestas:r});
+    $("#paso2").classList.add("hidden"); $("#paso3").classList.remove("hidden"); scrollTo(0,0);
+  }catch(err){
+    e.textContent = "No se pudo enviar. Revise su internet y vuelva a presionar Enviar (sus respuestas siguen aquí)."; e.style.display="block";
+    b.disabled=false; b.textContent="Enviar encuesta";
+  }
+});
+</script>
+</body>
+</html>
