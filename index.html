@@ -98,6 +98,8 @@
       <p><span class="badge" id="badgeTipo"></span></p>
       <p>Para cada punto seleccione la respuesta que a su juicio sea <b><u>la más acertada</u></b>. Es posible que usted considere que ninguna de las alternativas es totalmente acertada, pero en cada caso debe ofrecer la respuesta que le parezca preferible.</p>
       <p class="note">Todas las preguntas son obligatorias. Escriba las cifras completas solo con números (ej. 5000000 o 5'000.000), sin palabras como "millones".</p>
+      <p class="note">Sus respuestas se guardan solas mientras avanza: si se cierra la página, ábrala de nuevo con el mismo link y sigue donde iba.</p>
+      <p class="note hidden" id="retomado">✔ Recuperamos las respuestas que llevaba. Siga donde iba. <a href="#" id="btnNueva">¿Es otra persona? Empezar una nueva</a></p>
     </div>
     <form id="form" novalidate></form>
     <button class="btn" id="btnEnviar">Enviar encuesta</button>
@@ -345,9 +347,76 @@ $("#btnEmpezar").addEventListener("click", async () => {
     e.textContent = "No se pudo conectar. Revise su internet e intente de nuevo."; e.style.display="block";
     b.disabled=false; b.textContent="Empezar encuesta"; return;
   }
+  mostrarPaso2(null);
+  guardarLocal();
+});
+
+// ===== Autoguardado (en el celular y en el servidor) =====
+const LS_KEY = "encuesta_liderazgo_v1";
+function lsGet(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch(e){ return null; } }
+function lsSet(v){ try{ v==null ? localStorage.removeItem(LS_KEY) : localStorage.setItem(LS_KEY, JSON.stringify(v)); }catch(e){} }
+
+function snapshot(){
+  const s = {};
+  document.querySelectorAll("#form input, #form textarea").forEach(el => {
+    if (el.type==="radio"){ if (el.checked) s[el.name] = el.value; }
+    else if (el.type==="checkbox"){ (s[el.name] ||= []); if (el.checked) s[el.name].push(el.value); }
+    else if (el.value.trim()) s[el.name] = el.value;
+  });
+  return s;
+}
+function restaurar(s){
+  document.querySelectorAll("#form input, #form textarea").forEach(el => {
+    if (el.type==="radio") el.checked = s[el.name]===el.value;
+    else if (el.type==="checkbox") el.checked = (s[el.name]||[]).includes(el.value);
+    else el.value = s[el.name] ?? "";
+  });
+}
+// Preguntas con algo respondido (para ver el avance)
+function contarRespondidas(){
+  let n = 0;
+  document.querySelectorAll("#form .card").forEach(c => {
+    const algo = [...c.querySelectorAll("input,textarea")].some(el => (el.type==="radio"||el.type==="checkbox") ? el.checked : el.value.trim());
+    if (algo) n++;
+  });
+  return n;
+}
+function mostrarPaso2(snap){
   PREGS = preguntas(TIPO); render();
+  if (snap) restaurar(snap);
   $("#badgeTipo").textContent = `Encuesta Tipo ${TIPO} (Versión ${TIPO})`;
   $("#paso1").classList.add("hidden"); $("#paso2").classList.remove("hidden"); scrollTo(0,0);
+}
+function guardarLocal(){ if (SESION) lsSet({id:SESION, tipo:TIPO, snap:snapshot(), t:Date.now()}); }
+
+let timerServ = null, ultimoEnviado = "";
+function guardarServidor(){
+  if (!SESION) return;
+  const snap = snapshot(), j = JSON.stringify(snap);
+  if (j === ultimoEnviado) return;
+  rpc("liderazgo_guardar_borrador", {p_id:SESION, p_borrador:snap, p_respondidas:contarRespondidas()})
+    .then(() => { ultimoEnviado = j; }).catch(() => {});
+}
+function alCambiar(){
+  guardarLocal();
+  clearTimeout(timerServ); timerServ = setTimeout(guardarServidor, 2500);
+}
+$("#form").addEventListener("input", alCambiar);
+$("#form").addEventListener("change", alCambiar);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState==="hidden"){ guardarLocal(); guardarServidor(); } });
+
+// Si la persona cerró o recargó la página, retoma donde iba
+(function retomar(){
+  const g = lsGet();
+  if (!g || !g.id || !g.tipo || Date.now() - g.t > 3*24*3600*1000) return;
+  SESION = g.id; TIPO = g.tipo; ultimoEnviado = JSON.stringify(g.snap||{});
+  mostrarPaso2(g.snap||{});
+  $("#retomado").classList.remove("hidden");
+})();
+$("#btnNueva").addEventListener("click", e => {
+  e.preventDefault();
+  if (!confirm("¿Empezar una encuesta nueva para otra persona? Se borrarán las respuestas guardadas en este celular.")) return;
+  lsSet(null); location.reload();
 });
 
 // ===== Paso 2 =====
@@ -357,6 +426,7 @@ $("#btnEnviar").addEventListener("click", async () => {
   const b = $("#btnEnviar"); b.disabled = true; b.textContent = "Enviando…"; e.style.display="none";
   try{
     await rpc("liderazgo_enviar_encuesta", {p_id:SESION, p_respuestas:r});
+    clearTimeout(timerServ); lsSet(null); SESION = null;
     $("#paso2").classList.add("hidden"); $("#paso3").classList.remove("hidden"); scrollTo(0,0);
   }catch(err){
     e.textContent = "No se pudo enviar. Revise su internet y vuelva a presionar Enviar (sus respuestas siguen aquí)."; e.style.display="block";
