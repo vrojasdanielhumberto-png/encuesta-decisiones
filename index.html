@@ -48,6 +48,8 @@
   .note{font:14px system-ui,sans-serif;color:var(--muted)}
   .badge{display:inline-block;font:600 13px system-ui,sans-serif;background:var(--sel);color:var(--accent);padding:3px 10px;border-radius:99px}
   .hidden{display:none}
+  .eq{display:block;font:12px system-ui,sans-serif;color:var(--muted);min-height:15px;margin-top:2px}
+  .eq.bad{color:#b42318}
   .seq{font-family:ui-monospace,Consolas,monospace;font-weight:bold;letter-spacing:2px}
   .done{text-align:center;padding:40px 20px}
   .done h2{color:var(--ok);font-size:24px}
@@ -97,7 +99,7 @@
     <div class="card">
       <p><span class="badge" id="badgeTipo"></span></p>
       <p>Para cada punto seleccione la respuesta que a su juicio sea <b><u>la más acertada</u></b>. Es posible que usted considere que ninguna de las alternativas es totalmente acertada, pero en cada caso debe ofrecer la respuesta que le parezca preferible.</p>
-      <p class="note">Todas las preguntas son obligatorias. Escriba las cifras completas solo con números (ej. 5000000 o 5'000.000), sin palabras como "millones".</p>
+      <p class="note">Todas las preguntas son obligatorias. Escriba las cifras con números (ej. 5000000 o 5'000.000) o con palabras (ej. 5 millones). Debajo de cada casilla verá cómo entendimos la cifra.</p>
       <p class="note">Sus respuestas se guardan solas mientras avanza: si se cierra la página, ábrala de nuevo con el mismo link y sigue donde iba.</p>
       <p class="note hidden" id="retomado">✔ Recuperamos las respuestas que llevaba. Siga donde iba. <a href="#" id="btnNueva">¿Es otra persona? Empezar una nueva</a></p>
     </div>
@@ -232,7 +234,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 let TIPO = null, PREGS = [], SESION = null;
 
 function numInput(name, q){
-  return `<div class="unit">${q.pre?`<span>${q.pre}</span>`:""}<input type="text" inputmode="decimal" name="${name}" autocomplete="off">${q.suf?`<span>${q.suf}</span>`:""}</div>`;
+  return `<div class="unit">${q.pre?`<span>${q.pre}</span>`:""}<input type="text" inputmode="decimal" name="${name}" autocomplete="off">${q.suf?`<span>${q.suf}</span>`:""}</div><small class="eq" data-for="${name}"></small>`;
 }
 function render(){
   const f = $("#form"); f.innerHTML = "";
@@ -252,9 +254,9 @@ function render(){
       h += numInput(id, q);
     } else if (q.t==="est"){
       h += ESTIMATIVOS.map(([k,l]) => `<div class="est"><p><b>${k}.</b> ${l}</p><div class="grid3">
-        <div class="field"><span>Estimativo</span><input type="text" inputmode="decimal" name="${id}${k}_est" autocomplete="off"></div>
-        <div class="field"><span>Rango: entre (inferior)</span><input type="text" inputmode="decimal" name="${id}${k}_inf" autocomplete="off"></div>
-        <div class="field"><span>y (superior)</span><input type="text" inputmode="decimal" name="${id}${k}_sup" autocomplete="off"></div></div></div>`).join("");
+        <div class="field"><span>Estimativo</span><input type="text" inputmode="decimal" name="${id}${k}_est" autocomplete="off"><small class="eq" data-for="${id}${k}_est"></small></div>
+        <div class="field"><span>Rango: entre (inferior)</span><input type="text" inputmode="decimal" name="${id}${k}_inf" autocomplete="off"><small class="eq" data-for="${id}${k}_inf"></small></div>
+        <div class="field"><span>y (superior)</span><input type="text" inputmode="decimal" name="${id}${k}_sup" autocomplete="off"><small class="eq" data-for="${id}${k}_sup"></small></div></div></div>`).join("");
     }
     h += `<div class="err">Esta pregunta es obligatoria.</div></div>`;
     f.insertAdjacentHTML("beforeend", h);
@@ -262,9 +264,19 @@ function render(){
 }
 
 // Convierte "5'000.000", "$ 1.200.000", "12,5" -> número
+// También entiende palabras ("1.500 millones", "4,2 años luz", "12.742 km", "200 mil")
 function parseNum(s){
   if (s==null) return NaN;
-  s = String(s).trim().replace(/[$%\s]/g,"").replace(/[’']/g,".");
+  s = String(s).toLowerCase().trim();
+  if (!/\d/.test(s)) return NaN;
+  let mult = 1;
+  if (/mil\s*mill/.test(s)) mult = 1e9;
+  else if (/trill/.test(s)) mult = 1e18;
+  else if (/bill/.test(s)) mult = 1e12;
+  else if (/mill/.test(s)) mult = 1e6;
+  else if (/(^|[^a-záéíóúñ])mil([^a-záéíóúñ]|$)/.test(s)) mult = 1e3;
+  s = s.replace(/[’']/g,".").replace(/[^\d.,]/g,"");
+  s = s.replace(/^[.,]+|[.,]+$/g,"");
   if (!s) return NaN;
   const dots = (s.match(/\./g)||[]).length, commas = (s.match(/,/g)||[]).length;
   if (dots>1 && commas===0) s = s.replace(/\./g,"");
@@ -277,9 +289,10 @@ function parseNum(s){
   } else if (dots===1){
     const [a,b] = s.split("."); if (b.length===3 && a.length<=3 && a!=="0") s = a+b;
   }
-  const n = Number(s);
+  const n = Number(s) * mult;
   return isFinite(n) ? n : NaN;
 }
+const fmt = n => n.toLocaleString("es-CO", {maximumFractionDigits: 4});
 
 function val(name){ const el = document.querySelector(`[name="${name}"]:checked`); return el ? el.value : null; }
 function txt(name){ const el = document.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ""; }
@@ -311,8 +324,10 @@ function recoger(){
       for (const [k] of ESTIMATIVOS){
         const e = parseNum(txt(`${id}${k}_est`)), lo = parseNum(txt(`${id}${k}_inf`)), hi = parseNum(txt(`${id}${k}_sup`));
         r[`${id}${k}_est`]=e; r[`${id}${k}_inf`]=lo; r[`${id}${k}_sup`]=hi;
-        if ([e,lo,hi].some(isNaN)){ ok=false; msg=`Complete los tres números del literal ${k}.`; break; }
-        if (!(lo<=e && e<=hi)){ ok=false; msg=`En el literal ${k} el rango debe contener su estimativo (inferior ≤ estimativo ≤ superior).`; break; }
+        r[`${id}${k}_texto`] = [txt(`${id}${k}_est`), txt(`${id}${k}_inf`), txt(`${id}${k}_sup`)].join(" | ");
+        if ([e,lo,hi].some(isNaN)){ ok=false; msg=`Literal ${k}: faltan números o alguno no se entiende (revise lo que dice debajo de cada casilla).`; break; }
+        if (lo > hi){ ok=false; msg=`Literal ${k}: el inferior (${fmt(lo)}) es mayor que el superior (${fmt(hi)}). Inviértalos.`; break; }
+        if (!(lo<=e && e<=hi)){ ok=false; msg=`Literal ${k}: su estimativo (${fmt(e)}) debe quedar entre el inferior (${fmt(lo)}) y el superior (${fmt(hi)}).`; break; }
       }
     }
     marcar(card, ok, msg);
@@ -383,7 +398,7 @@ function contarRespondidas(){
 }
 function mostrarPaso2(snap){
   PREGS = preguntas(TIPO); render();
-  if (snap) restaurar(snap);
+  if (snap){ restaurar(snap); actualizarTodosEq(); }
   $("#badgeTipo").textContent = `Encuesta Tipo ${TIPO} (Versión ${TIPO})`;
   $("#paso1").classList.add("hidden"); $("#paso2").classList.remove("hidden"); scrollTo(0,0);
 }
@@ -397,7 +412,15 @@ function guardarServidor(){
   rpc("liderazgo_guardar_borrador", {p_id:SESION, p_borrador:snap, p_respondidas:contarRespondidas()})
     .then(() => { ultimoEnviado = j; }).catch(() => {});
 }
-function alCambiar(){
+function actualizarEq(el){
+  const eq = document.querySelector(`.eq[data-for="${el.name}"]`); if (!eq) return;
+  const raw = el.value.trim(), n = parseNum(raw);
+  eq.classList.toggle("bad", !!raw && isNaN(n));
+  eq.textContent = !raw ? "" : isNaN(n) ? "No se entiende este número" : "= " + fmt(n);
+}
+function actualizarTodosEq(){ document.querySelectorAll("#form input[type=text]").forEach(actualizarEq); }
+function alCambiar(ev){
+  if (ev && ev.target && ev.target.type==="text") actualizarEq(ev.target);
   guardarLocal();
   clearTimeout(timerServ); timerServ = setTimeout(guardarServidor, 2500);
 }
